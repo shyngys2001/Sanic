@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ news.title }}
+{% endblock %}
+
+
+{% block content %}
+{% if news %}
+<form action="" method="post" enctype="multipart/form-data">
+    <input type="hidden" name="action" value="update">
+    <div class="mb-3">
+        <label class="" for="inputNewsTitle">Title</label>
+        <input name="title" class="form-control" id="inputNewsTitle" type="text"
+               placeholder="Enter title your news"
+               value="{{ news.title }}">
+    </div>
+    <div class="mb-3">
+        <input type="file" name="photo" value="">
+    </div>
+    <div class="mb-3">
+        <label class="" for="inputNewsContent">Content</label>
+        <input name="content" class="form-control" id="inputNewsContent" type="text"
+               placeholder="Enter content your news"
+               value="{{ news.content }}">
+    </div>
+    <button type="submit" class="btn btn-primary btn-block">Сохранить изменения</button>
+</form>
+{% endif %}
+{% endblock %}

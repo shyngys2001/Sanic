@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+<link rel="stylesheet" href="/static/css/style.css">
+{% block title %}
+Список новостей
+{% endblock %}
+
+{% block content %}
+{% if news %}
+<div class="news_box">
+    <div class="news">
+        <input  class="list-group-item list-group-item-action" value="{{ news.title }}">
+        <br>
+        <img src="/static/media/{{ news.photo }}" alt="">
+        <br>
+        <h3>{{ news.content }}</h3>
+        <br>
+        <a href="/update/{{ news._id }}">Update</a>
+        <br>
+        <a href="/delete/{{ news._id }}">Delete</a>
+    </div>
+</div>
+{% endif %}
+
+
+{% endblock %}

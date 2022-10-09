@@ -1,0 +1,12 @@
+.news_box{
+    float: left;
+    color:red;
+}
+.news{
+    margin-right: 67px;
+    margin-bottom: 40px;
+}
+img{
+    height: 100px;
+    width: 200px;
+}

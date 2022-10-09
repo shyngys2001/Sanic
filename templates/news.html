@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+<link rel="stylesheet" href="/static/css/style.css">
+{% block title %}
+Список новостей
+{% endblock %}
+
+<a href="/create">Добавить новость</a>
+
+{% block content %}
+{% for item in all_news %}
+<div class="news_box">
+    <div class="news">
+        <a href="/{{ item._id }}" class="list-group-item list-group-item-action">
+            {{ item.title }}
+        </a>
+        <br>
+        <img src="/static/media/{{ item.photo }}" alt="">
+        <br>
+        <input value="{{ item.content }}"/>
+    </div>
+</div>
+{% endfor %}
+
+
+{% endblock %}

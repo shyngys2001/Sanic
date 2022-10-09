@@ -1,23 +1,15 @@
 from bson import ObjectId
-from flask import current_app
-from sanic import Sanic
-from sanic.exceptions import NotFound
+from sanic import Sanic, response
 from pymongo import MongoClient
-from django.shortcuts import render
-from sanic.response import json as json_response
-from umongo import Document
-from umongo.fields import *
-from umongo.frameworks import MotorAsyncIOInstance
+from sanic_ext import render
 from umongo.frameworks import PyMongoInstance
 
-MONGODB_URI = current_app.config["MONGODB_URI"]
-MONGODB_NAME = current_app.config["MONGODB_NAME"]
+MONGODB_URI = 'mongodb+srv://h4ww:98mUStcarE@forcourier.cfbnpsh.mongodb.net/?retryWrites=true&w=majority'
+MONGODB_NAME = 'sample_prog'
 
 app = Sanic("project")
-settings = dict(
-    lazy_umongo=MotorAsyncIOInstance(),
-)
-app.config.update(settings)
+app.static('/static', './static')
+
 db = MongoClient(
     MONGODB_URI
 )[MONGODB_NAME]
@@ -25,69 +17,110 @@ instance = PyMongoInstance()
 instance.set_db(db)
 
 
-@app.config.lazy_umongo.register
-class News(Document):
-    _id = IntegerField(primary_key=True)
-    title = StringField(required=True, allow_none=False)
-    description = StringField(required=True, allow_none=False)
-
-
-@app.route("/news_create", methods=["POST"])
-async def create_news(request, title, description):
-    news = request.json
-    news["_id"] = str(ObjectId())
-    news["title"] = title
-    news["description"] = description
-
-    new_news = await News.insert_one(news)
-    created_news = await News.find_one(
-        {"_id": new_news.inserted_id}, as_raw=True
-    )
-
-    return json_response(created_news)
-
-
 @app.route("/", methods=["GET"])
 async def list_news(request):
-
-    return render('index.html')
-
-
-@app.route("/<id>", methods=["GET"])
-async def read_news(request, _id):
-    if (news := await News.find_one({"_id": _id}, as_raw=True)) is not None:
-        return json_response(news)
-
-    raise NotFound(f"News {_id} not found")
+    all_news = list(db.news.find({}, {'title': 1, 'photo': 1, 'content': 1}))
+    return await render('news.html', context={'all_news': all_news})
 
 
-@app.route("/<id>", methods=["PUT"])
-async def update_student(request, _id):
-    news = request.json
-    update_result = await News.update_one({"_id": _id}, {"$set": {news["title"], news["description"]}})
+@app.route("/create", methods=["POST", "GET"])
+async def create_news(request):
+    action = request.form.get('action')
+    if action == 'create':
+        photo = request.files.get('photo', None)
+        if photo:
+            file_content = photo.body
+            hashing = hash(photo)
+            open(f'static/media/{hashing}.png', 'wb').write(file_content)
+            create = {
+                'title': request.form.get('title'),
+                "content": request.form.get('content'),
+                'photo': f"{hashing}.png"
+            }
+            db.news.insert_one(create)
+        return response.redirect('/')
+    return await render('add_news.html')
 
-    if update_result.modified_count == 1:
-        if (
-                updated_news := await News.find_one({"_id": _id}, as_raw=True)
-        ) is not None:
-            return json_response(updated_news)
 
-    if (
-            existing_news := await News.find_one({"_id": _id}, as_raw=True)
-    ) is not None:
-        return json_response(existing_news)
+@app.route("/<nid>", methods=["POST", "GET"])
+async def read_news(request, nid):
+    news = db.news.find_one({"_id": ObjectId(nid)}, {'title': 1, 'photo': 1, 'content': 1})
 
-    raise NotFound(f"News {_id} not found")
+    return await render('news_id.html', context={"news": news})
 
 
-@app.route("/<id>", methods=["DELETE"])
-async def delete_news(request, _id):
-    delete_result = await News.delete_one({"_id": _id})
+@app.route("/update/<nid>", methods=["POST", "GET"])
+async def update_student(request, nid):
+    news = db.news.find_one({"_id": ObjectId(nid)}, {'title': 1, 'photo': 1, 'content': 1})
+    action = request.form.get('action')
+    if action == 'update':
+        photo = request.files.get('photo', None)
+        if photo:
+            file_content = photo.body
+            hashing = hash(photo)
+            open(f'static/media/{hashing}.png', 'wb').write(file_content)
+            db.news.update_one(
+                {'_id': ObjectId(nid)},
+                {'$set': {'title': request.form.get('title'), 'photo': f'{hashing}.png',
+                          'content': request.form.get('content')}}
+            )
+            return response.redirect('/')
+        elif request.form.get('title') and request.form.get('content'):
+            db.news.update_one(
+                {'_id': ObjectId(nid)},
+                {'$set': {'title': request.form.get('title'), 'content': request.form.get('content')}}
+            )
+            return response.redirect('/')
+        elif request.form.get('title'):
+            db.news.update_one(
+                {'_id': ObjectId(nid)},
+                {'$set': {'title': request.form.get('title')}}
+            )
+            return response.redirect('/')
+        elif request.files.get('photo'):
+            file_content = photo.body
+            hashing = hash(photo)
+            open(f'static/media/{hashing}.png', 'wb').write(file_content)
+            db.news.update_one(
+                {'_id': ObjectId(nid)},
+                {'$set': {'photo': f'{hashing}.png'}}
+            )
+            return response.redirect('/')
+        elif request.form.get('title') and request.files.get('photo'):
+            file_content = photo.body
+            hashing = hash(photo)
+            open(f'static/media/{hashing}.png', 'wb').write(file_content)
+            db.news.update_one(
+                {'_id': ObjectId(nid)},
+                {'$set': {'title': request.form.get('title'), 'photo': f'{hashing}.png'}}
+            )
+            return response.redirect('/')
+        elif request.files.get('photo') and request.form.get('content'):
+            file_content = photo.body
+            hashing = hash(photo)
+            open(f'static/media/{hashing}.png', 'wb').write(file_content)
+            db.news.update_one(
+                {'_id': ObjectId(nid)},
+                {'$set': {'photo': f'{hashing}.png', 'content': request.form.get('content')}}
+            )
+            return response.redirect('/')
+        elif request.form.get('content'):
+            db.news.update_one(
+                {'_id': ObjectId(nid)},
+                {'$set': {'title': request.form.get('title')}}
+            )
+            return response.redirect('/')
+    return await render('update_news.html', context={'news': news})
 
-    if delete_result.deleted_count == 1:
-        return json_response({}, status=204)
 
-    raise NotFound(f"News {_id} not found")
+@app.route("/delete/<nid>", methods=["POST", "GET"])
+async def delete_news(request, nid):
+    news = db.news.find_one({"_id": ObjectId(nid)}, {'title': 1, 'photo': 1, 'content': 1})
+    action = request.form.get('action')
+    if action == 'delete':
+        db.news.delete_one({'_id': ObjectId(nid)})
+        return response.redirect('/')
+    return await render('delete_news.html', context={'news': news})
 
 
 if __name__ == "__main__":

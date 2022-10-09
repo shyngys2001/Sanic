@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Добавление новостей
+{% endblock %}
+
+
+{% block content %}
+<h1>Добавление новостей</h1>
+<form action="" method="post" enctype="multipart/form-data">
+    <input type="hidden" name="action" value="create">
+    <div class="mb-3">
+        <label class="" for="inputNewsTitle">Title</label>
+        <input name="title" class="form-control" id="inputNewsTitle" type="text"
+               placeholder="Enter title your news"
+               value="">
+    </div>
+    <div class="mb-3">
+        <input type="file" name="photo">
+    </div>
+    <div class="mb-3">
+        <label class="" for="inputNewsContent">Content</label>
+        <input name="content" class="form-control" id="inputNewsContent" type="text"
+               placeholder="Enter content your news"
+               value="">
+    </div>
+    <button type="submit" class="btn btn-primary btn-block">Добавить новость</button>
+</form>
+{% endblock %}
